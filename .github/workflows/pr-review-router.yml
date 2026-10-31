@@ -23,9 +23,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Free serving (default: jev-1.13-free). Create at https://opencode.ai/console then:
           #   gh secret set OPENCODE_API_KEY --repo <owner>/<repo>
-          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+          # OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
           # Or TypeSafe direct (paid). Set these three instead and leave OPENCODE_API_KEY unset:
-          # TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}
-          # JEV_BASE_URL: https://api.typesafe.ai
-          # JEV_MODEL: jev-latest
+          TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}
+          JEV_BASE_URL: https://api.typesafe.ai
+          JEV_MODEL: jev-latest
         run: node src/action.ts
