@@ -20,7 +20,9 @@ async function ghApi(path: string, token: string, method = "GET", body?: unknown
     },
     body: body ? JSON.stringify(body) : undefined,
   });
-  if (!res.ok) console.error(`github: ${method} ${path} -> HTTP ${res.status}`);
+  if (!res.ok && !(method === "DELETE" && res.status === 404)) {
+    console.error(`github: ${method} ${path} -> HTTP ${res.status} ${(await res.text()).slice(0, 200)}`);
+  }
   return res;
 }
 
