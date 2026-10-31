@@ -71,7 +71,7 @@ export async function askJev(state: PrState, opts: JevOptions): Promise<JevAnswe
       const n = answers[key]?.["noul"];
       if (typeof n === "number") detectors[key] = n >= 0.5;
     }
-    return { choice: route["choice"] as JevAnswer["choice"], p, risk: toRisk(risk["score"] as number), detectors };
+    return { choice: route["choice"] as JevAnswer["choice"], p, risk: toRisk(risk["score"] as number), detectors, probabilities: probs };
   } catch {
     return null;
   }

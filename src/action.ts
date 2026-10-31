@@ -9,7 +9,7 @@ interface GhFile {
   deletions: number;
 }
 
-async function gh(path: string, token: string, method = "GET", body?: unknown): Promise<Response> {
+async function ghApi(path: string, token: string, method = "GET", body?: unknown): Promise<Response> {
   return fetch(`https://api.github.com${path}`, {
     method,
     headers: {
@@ -34,11 +34,13 @@ function stateText(state: PrState, flagged: string[]): string {
 
 // Advisory-only entrypoint for the pull_request workflow. Never blocks merge:
 // it labels ready-for-human / ready-for-agent and leaves a one-line comment.
+// Defaults to OpenCode's free Jev serving; set JEV_BASE_URL/JEV_MODEL to use
+// TypeSafe direct instead.
 async function main(): Promise<void> {
   const eventPath = process.env["GITHUB_EVENT_PATH"];
   const token = process.env["GITHUB_TOKEN"];
-  const apiKey = process.env["TYPESAFE_API_KEY"];
-  if (!eventPath || !token || !apiKey) throw new Error("missing GITHUB_EVENT_PATH, GITHUB_TOKEN, or TYPESAFE_API_KEY");
+  const apiKey = process.env["OPENCODE_API_KEY"] ?? process.env["TYPESAFE_API_KEY"];
+  if (!eventPath || !token || !apiKey) throw new Error("missing event payload, GITHUB_TOKEN, or API key");
   const event = JSON.parse(readFileSync(eventPath, "utf8")) as {
     number: number;
     pull_request: { title: string; body: string | null };
@@ -47,40 +49,52 @@ async function main(): Promise<void> {
   const [owner, repo] = event.repository.full_name.split("/");
   const pr = event.number;
 
-  const filesRes = await gh(`/repos/${owner}/${repo}/pulls/${pr}/files?per_page=100`, token);
-  if (!filesRes.ok) throw new Error(`list files failed: ${filesRes.status}`);
-  const files = (await filesRes.json()) as GhFile[];
-  const names = files.map((f) => f.filename);
-  const state: PrState = {
-    title: event.pull_request.title,
-    description: event.pull_request.body ?? "",
-    files: names,
-    additions: files.reduce((n, f) => n + f.additions, 0),
-    deletions: files.reduce((n, f) => n + f.deletions, 0),
-    testsTouched: names.some((n) => /(^|\/)tests?\//.test(n) || /\.test\.[a-z]+$/.test(n)),
+  const publish = async (label: string, reason: string): Promise<void> => {
+    await ghApi(`/repos/${owner}/${repo}/issues/${pr}/labels`, token, "POST", { labels: [label] });
+    const other = label === "ready-for-human" ? "ready-for-agent" : "ready-for-human";
+    await ghApi(`/repos/${owner}/${repo}/issues/${pr}/labels/${other}`, token, "DELETE");
+    await ghApi(`/repos/${owner}/${repo}/issues/${pr}/comments`, token, "POST", {
+      body: `Jev router: \`${label}\` — ${reason}`,
+    });
   };
-  const workspace = process.env["GITHUB_WORKSPACE"] ?? ".";
-  let configText = "needs-human-paths: []\n";
+
   try {
-    configText = readFileSync(`${workspace}/jev-review.yml`, "utf8");
-  } catch {
-    // fall through with empty config
+    const filesRes = await ghApi(`/repos/${owner}/${repo}/pulls/${pr}/files?per_page=100`, token);
+    if (!filesRes.ok) throw new Error(`list files failed: ${filesRes.status}`);
+    const files = (await filesRes.json()) as GhFile[];
+    const names = files.map((f) => f.filename);
+    const state: PrState = {
+      title: event.pull_request.title,
+      description: event.pull_request.body ?? "",
+      files: names,
+      additions: files.reduce((n, f) => n + f.additions, 0),
+      deletions: files.reduce((n, f) => n + f.deletions, 0),
+      testsTouched: names.some((n) => /(^|\/)tests?\//.test(n) || /\.test\.[a-z]+$/.test(n)),
+    };
+    const workspace = process.env["GITHUB_WORKSPACE"] ?? ".";
+    let configText = "needs-human-paths: []\n";
+    try {
+      configText = readFileSync(`${workspace}/jev-review.yml`, "utf8");
+    } catch {
+      // fall through with empty config
+    }
+    const flagged = matchedPatterns(names, loadConfig(configText));
+
+    const jev = await askJev(
+      { ...state, description: `${state.description}\n${stateText(state, flagged)}` },
+      {
+        apiKey,
+        baseUrl: process.env["JEV_BASE_URL"] ?? "https://opencode.ai/inference/systemone",
+        model: process.env["JEV_MODEL"] ?? "jev-1.13-free",
+      },
+    );
+    const verdict = decide(state, jev);
+    await publish(verdict.label, verdict.reason);
+  } catch (err) {
+    // Fail-closed: any router failure still lands a needs-human label.
+    await publish("ready-for-human", `needs-human (router error: ${(err as Error).message})`);
+    throw err;
   }
-  const flagged = matchedPatterns(names, loadConfig(configText));
-
-  const jev = await askJev(
-    { ...state, description: `${state.description}\n${stateText(state, flagged)}` },
-    { apiKey },
-  );
-  const verdict = decide(state, jev);
-
-  const label = verdict.label;
-  await gh(`/repos/${owner}/${repo}/issues/${pr}/labels`, token, "POST", { labels: [label] });
-  const other = label === "ready-for-human" ? "ready-for-agent" : "ready-for-human";
-  await gh(`/repos/${owner}/${repo}/issues/${pr}/labels/${other}`, token, "DELETE");
-  await gh(`/repos/${owner}/${repo}/issues/${pr}/comments`, token, "POST", {
-    body: `Jev router: \`${label}\` — ${verdict.reason}`,
-  });
 }
 
 await main();

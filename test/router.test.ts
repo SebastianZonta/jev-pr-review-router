@@ -38,6 +38,36 @@ describe("decide (review router)", () => {
     assert.match(verdict.reason, /fallback/i);
   });
 
+  it("fails closed on a malformed Jev choice", () => {
+    const verdict = decide(smallDocsState, {
+      choice: "bogus",
+      p: 0.99,
+      risk: 1,
+      detectors: {},
+    } as unknown as Parameters<typeof decide>[1]);
+    assert.equal(verdict.label, "ready-for-human");
+    assert.match(verdict.reason, /fallback/i);
+  });
+
+  it("pins the P(needs-human) boundary: 0.49 routes agent, 0.51 routes human", () => {
+    const agent = decide(smallDocsState, {
+      choice: "agent-sufficient",
+      p: 0.51,
+      risk: 2,
+      detectors: {},
+      probabilities: { "agent-sufficient": 0.51, "needs-human": 0.49 },
+    });
+    assert.equal(agent.label, "ready-for-agent");
+    const human = decide(smallDocsState, {
+      choice: "needs-human",
+      p: 0.51,
+      risk: 2,
+      detectors: {},
+      probabilities: { "agent-sufficient": 0.49, "needs-human": 0.51 },
+    });
+    assert.equal(human.label, "ready-for-human");
+  });
+
   it("routes migration-touching changes to needs-human even when choice is agent-sufficient", () => {
     const verdict = decide(smallDocsState, {
       choice: "agent-sufficient",

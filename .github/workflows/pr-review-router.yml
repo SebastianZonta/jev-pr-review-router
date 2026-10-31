@@ -18,8 +18,8 @@ jobs:
         with:
           node-version: 24
       - run: npm ci --ignore-scripts
-      - name: Route review with Jev (advisory only)
+      - name: Route review with Jev (advisory only, free via OpenCode)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}
+          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
         run: node src/action.ts

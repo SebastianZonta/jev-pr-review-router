@@ -12,29 +12,34 @@ export interface JevAnswer {
   p: number;
   risk: number;
   detectors: Record<string, boolean>;
+  probabilities?: Record<string, number>;
 }
 
 export interface Verdict {
-  label: "ready-for-agent" | "ready-for-human";
+  label: "ready-for-human" | "ready-for-agent";
   reason: string;
 }
 
-// Thresholds from spec: P(needs-human) >= 0.5 or risk >= 4 routes to human.
+// Routing rule (spec): needs-human when P(needs-human) >= 0.5, risk >= 4,
+// any Noul detector fires, or the answer is missing/malformed. A top-pick of
+// needs-human always routes human, even below 0.5 — caution over literalism.
 export function decide(state: PrState, jev: JevAnswer | null): Verdict {
   void state;
-  if (jev === null || jev.p < 0.5) {
-    const why = jev === null ? "no Jev answer" : `uncertain p=${jev.p}`;
-    return { label: "ready-for-human", reason: `needs-human (fallback: ${why})` };
+  if (jev === null || (jev.choice !== "agent-sufficient" && jev.choice !== "needs-human")) {
+    return { label: "ready-for-human", reason: "needs-human (fallback: no usable Jev answer)" };
   }
-  if (jev.choice === "needs-human" || jev.risk >= 4) {
-    return { label: "ready-for-human", reason: `needs-human p=${jev.p} risk=${jev.risk}` };
-  }
+  const pNh =
+    jev.probabilities?.["needs-human"] ?? (jev.choice === "needs-human" ? jev.p : 1 - jev.p);
   const fired = Object.keys(jev.detectors).filter((k) => jev.detectors[k]);
-  if (fired.length > 0) {
+  if (jev.choice === "needs-human" || pNh >= 0.5 || jev.risk >= 4 || fired.length > 0) {
+    const why = fired.length > 0 ? ` (${fired.join(", ")})` : "";
     return {
       label: "ready-for-human",
-      reason: `needs-human p=${jev.p} risk=${jev.risk} (${fired.join(", ")})`,
+      reason: `needs-human P(needs-human)=${pNh.toFixed(2)} risk=${jev.risk}${why}`,
     };
   }
-  return { label: "ready-for-agent", reason: `agent-sufficient p=${jev.p} risk=${jev.risk}` };
+  return {
+    label: "ready-for-agent",
+    reason: `agent-sufficient P(needs-human)=${pNh.toFixed(2)} risk=${jev.risk}`,
+  };
 }
