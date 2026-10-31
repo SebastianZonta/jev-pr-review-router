@@ -54,7 +54,11 @@ export async function askJev(state: PrState, opts: JevOptions): Promise<JevAnswe
         body: JSON.stringify({ model: opts.model ?? "jev-latest", state, questions: QUESTIONS }),
       },
     );
-    if (!res.ok) return null;
+    if (!res.ok) {
+      const snippet = (await res.text()).slice(0, 300);
+      console.error(`jev: HTTP ${res.status} ${snippet}`);
+      return null;
+    }
     const data = (await res.json()) as {
       answers?: Record<string, Record<string, unknown>>;
     };
@@ -72,7 +76,8 @@ export async function askJev(state: PrState, opts: JevOptions): Promise<JevAnswe
       if (typeof n === "number") detectors[key] = n >= 0.5;
     }
     return { choice: route["choice"] as JevAnswer["choice"], p, risk: toRisk(risk["score"] as number), detectors, probabilities: probs };
-  } catch {
+  } catch (err) {
+    console.error(`jev: ${(err as Error).message}`);
     return null;
   }
 }
