@@ -26,3 +26,5 @@ npm test && npm run typecheck
 ## Tune
 
 `jev-review.yml` lists paths that force `needs-human`. Edit it in a PR.
+
+> Tip: run `npm run smoke` before opening a PR.
