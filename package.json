@@ -5,6 +5,7 @@
   "description": "Jev-powered advisory PR review router (agent-sufficient vs needs-human)",
   "scripts": {
     "test": "node --test test/*.test.ts",
+    "smoke": "node scripts/smoke.ts",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
