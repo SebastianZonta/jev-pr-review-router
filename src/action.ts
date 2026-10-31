@@ -62,6 +62,12 @@ async function main(): Promise<void> {
         assignees: [assignee],
       });
     }
+    if (label === "ready-for-agent") {
+      await ghApi(`/repos/${owner}/${repo}/pulls/${pr}/reviews`, token, "POST", {
+        event: "APPROVE",
+        body: `Jev router approved: ${reason}`,
+      });
+    }
   };
 
   try {
