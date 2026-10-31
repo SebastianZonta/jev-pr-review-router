@@ -1,0 +1,14 @@
+{
+  "name": "jev-pr-review-router",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Jev-powered advisory PR review router (agent-sufficient vs needs-human)",
+  "scripts": {
+    "test": "node --test test/*.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "typescript": "^5.9.3"
+  }
+}

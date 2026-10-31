@@ -1,0 +1,10 @@
+# Paths that route a pull request to needs-human. Edited by team PR.
+needs-human-paths:
+  - "db/migrations/**"
+  - "src/auth/**"
+  - "src/payments/**"
+  - "infra/**"
+  - ".github/**"
+  - "package-lock.json"
+  - "pnpm-lock.yaml"
+  - "Dockerfile"
