@@ -1,0 +1,2 @@
+-- Adds role column. DEMO FIXTURE, DO NOT MERGE.
+ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'user';
