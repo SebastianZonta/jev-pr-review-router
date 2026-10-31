@@ -26,6 +26,7 @@ jobs:
           # OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
           # Or TypeSafe direct (paid). Set these three instead and leave OPENCODE_API_KEY unset:
           TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}
+          JEV_MODEL: jev-1.14.0
           JEV_BASE_URL: https://api.typesafe.ai
           JEV_MODEL: jev-latest
         run: node src/action.ts
