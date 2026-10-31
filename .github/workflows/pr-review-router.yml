@@ -18,9 +18,18 @@ jobs:
         with:
           node-version: 24
       - run: npm ci --ignore-scripts
+      - name: Mint approve token (GitHub App)
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        continue-on-error: true
+        with:
+          app-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          permission-pull-requests: write
       - name: Route review with Jev (advisory only)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          APPROVE_TOKEN: ${{ steps.app-token.outputs.token }}
           # TypeSafe key. Create at https://console.typesafe.ai/keys then:
           #   gh secret set TYPESAFE_API_KEY --repo <owner>/<repo>
           TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}

@@ -53,6 +53,7 @@ async function main(): Promise<void> {
   const [owner, repo] = event.repository.full_name.split("/");
   const pr = event.number;
 
+  const approveToken = process.env["APPROVE_TOKEN"] || token;
   const publish = async (label: string, reason: string): Promise<void> => {
     await ghApi(`/repos/${owner}/${repo}/issues/${pr}/labels`, token, "POST", { labels: [label] });
     const other = label === "ready-for-human" ? "ready-for-agent" : "ready-for-human";
@@ -67,7 +68,7 @@ async function main(): Promise<void> {
       });
     }
     if (label === "ready-for-agent") {
-      await ghApi(`/repos/${owner}/${repo}/pulls/${pr}/reviews`, token, "POST", {
+      await ghApi(`/repos/${owner}/${repo}/pulls/${pr}/reviews`, approveToken, "POST", {
         event: "APPROVE",
         body: `Jev router approved: ${reason}`,
       });
