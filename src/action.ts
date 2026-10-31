@@ -56,6 +56,12 @@ async function main(): Promise<void> {
     await ghApi(`/repos/${owner}/${repo}/issues/${pr}/comments`, token, "POST", {
       body: `Jev router: \`${label}\` — ${reason}`,
     });
+    const assignee = process.env["JEV_ASSIGNEE"];
+    if (label === "ready-for-human" && assignee) {
+      await ghApi(`/repos/${owner}/${repo}/issues/${pr}/assignees`, token, "POST", {
+        assignees: [assignee],
+      });
+    }
   };
 
   try {

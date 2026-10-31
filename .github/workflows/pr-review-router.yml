@@ -25,4 +25,7 @@ jobs:
           #   gh secret set TYPESAFE_API_KEY --repo <owner>/<repo>
           TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}
           JEV_MODEL: jev-latest
+          # GitHub user assigned on needs-human PRs. Set with:
+          #   gh variable set JEV_ASSIGNEE --repo <owner>/<repo> --body <username>
+          JEV_ASSIGNEE: ${{ vars.JEV_ASSIGNEE }}
         run: node src/action.ts
