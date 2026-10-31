@@ -34,12 +34,10 @@ function stateText(state: PrState, flagged: string[]): string {
 
 // Advisory-only entrypoint for the pull_request workflow. Never blocks merge:
 // it labels ready-for-human / ready-for-agent and leaves a one-line comment.
-// Defaults to OpenCode's free Jev serving; set JEV_BASE_URL/JEV_MODEL to use
-// TypeSafe direct instead.
 async function main(): Promise<void> {
   const eventPath = process.env["GITHUB_EVENT_PATH"];
   const token = process.env["GITHUB_TOKEN"];
-  const apiKey = process.env["OPENCODE_API_KEY"] ?? process.env["TYPESAFE_API_KEY"];
+  const apiKey = process.env["TYPESAFE_API_KEY"];
   if (!eventPath || !token || !apiKey) throw new Error("missing event payload, GITHUB_TOKEN, or API key");
   const event = JSON.parse(readFileSync(eventPath, "utf8")) as {
     number: number;
@@ -84,8 +82,8 @@ async function main(): Promise<void> {
       { ...state, description: `${state.description}\n${stateText(state, flagged)}` },
       {
         apiKey,
-        baseUrl: process.env["JEV_BASE_URL"] ?? "https://opencode.ai/inference/systemone",
-        model: process.env["JEV_MODEL"] ?? "jev-1.13-free",
+        baseUrl: process.env["JEV_BASE_URL"] ?? "https://api.typesafe.ai",
+        model: process.env["JEV_MODEL"] ?? "jev-latest",
       },
     );
     const verdict = decide(state, jev);
