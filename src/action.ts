@@ -10,7 +10,7 @@ interface GhFile {
 }
 
 async function ghApi(path: string, token: string, method = "GET", body?: unknown): Promise<Response> {
-  return fetch(`https://api.github.com${path}`, {
+  const res = await fetch(`https://api.github.com${path}`, {
     method,
     headers: {
       accept: "application/vnd.github+json",
@@ -20,6 +20,8 @@ async function ghApi(path: string, token: string, method = "GET", body?: unknown
     },
     body: body ? JSON.stringify(body) : undefined,
   });
+  if (!res.ok) console.error(`github: ${method} ${path} -> HTTP ${res.status}`);
+  return res;
 }
 
 function stateText(state: PrState, flagged: string[]): string {
